@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+
+    <com.hbb.ffmepg.code.opengl.AbleGLSurfaceView
+        android:id="@+id/able_glView"
+        android:layout_width="match_parent"
+        android:layout_height="350dp" />
+
+    
+    <Button
+        android:layout_above="@+id/btn_init"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        android:text="加载数据"
+        android:onClick="loadData" />
+
+    <Button
+        android:id="@+id/btn_init"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="75dp"
+        android:onClick="initFFmpeg"
+        android:text="初始化!"/>
+
+</RelativeLayout>
