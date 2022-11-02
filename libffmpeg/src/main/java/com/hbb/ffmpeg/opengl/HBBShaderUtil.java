@@ -1,4 +1,4 @@
-package com.hbb.ffmepg.code.opengl;
+package com.hbb.ffmpeg.opengl;
 
 import android.content.Context;
 import android.opengl.GLES20;

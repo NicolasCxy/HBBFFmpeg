@@ -1,14 +1,8 @@
-package com.hbb.ffmepg.code.opengl;
+package com.hbb.ffmpeg.opengl;
 
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-
-import com.hbb.ffmepg.code.R;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;

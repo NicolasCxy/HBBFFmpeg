@@ -19,9 +19,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
     return JNI_VERSION_1_4;
 }
 
+
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_hbb_ffmepg_code_SoftwareVideoDeCode_nativeInit(JNIEnv *env, jobject thiz) {
+Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeInit(JNIEnv *env, jobject thiz) {
     if (callJava == NULL) {
         callJava = new AbleCallJava(javaVM, env, thiz);
     }
@@ -35,12 +36,13 @@ Java_com_hbb_ffmepg_code_SoftwareVideoDeCode_nativeInit(JNIEnv *env, jobject thi
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_hbb_ffmepg_code_SoftwareVideoDeCode_nativeDecodeVideo(JNIEnv *env, jobject thiz,
-                                                               jbyteArray data_, jint length) {
+Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeDecodeVideo(JNIEnv *env, jobject thiz,
+                                                          jbyteArray data_, jint length) {
+
     jbyte *data = env->GetByteArrayElements(data_, NULL);
+
     if (mVideoDecoder != NULL) {
         mVideoDecoder->H264Decode(reinterpret_cast<uint8_t *>(data), length);
     }
     env->ReleaseByteArrayElements(data_, data, 0);
-
 }

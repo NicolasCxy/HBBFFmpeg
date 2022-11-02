@@ -1,4 +1,4 @@
-package com.hbb.ffmepg.code.utils;
+package com.hbb.ffmpeg.utils;
 
 public class ImageUtil {
 //    nv21ToNV12

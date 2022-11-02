@@ -13,9 +13,6 @@ add_library(
         SHARED
         ${cpp_source})
 
-find_library(
-        log-lib
-        log)
 
 target_link_libraries(
         native-lib

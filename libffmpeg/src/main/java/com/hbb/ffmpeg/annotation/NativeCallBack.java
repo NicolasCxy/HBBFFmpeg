@@ -1,4 +1,4 @@
-package com.hbb.ffmepg.code;
+package com.hbb.ffmpeg.annotation;
 
 
 import java.lang.annotation.ElementType;
@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 
 /**
- * Native 回调函数
+ * 用来标识当前函数为Native回调函数，无需关心
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

@@ -1,4 +1,4 @@
-package com.hbb.ffmepg.code.utils;
+package com.hbb.ffmpeg.utils;
 
 import android.os.Environment;
 

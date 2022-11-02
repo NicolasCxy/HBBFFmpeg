@@ -7,7 +7,7 @@
     tools:context=".MainActivity">
 
 
-    <com.hbb.ffmepg.code.opengl.AbleGLSurfaceView
+    <com.hbb.ffmpeg.opengl.AbleGLSurfaceView
         android:id="@+id/able_glView"
         android:layout_width="match_parent"
         android:layout_height="350dp" />

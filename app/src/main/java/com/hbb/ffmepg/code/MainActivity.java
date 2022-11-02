@@ -9,23 +9,20 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.hbb.ffmepg.code.opengl.AbleGLSurfaceView;
-import com.hbb.ffmepg.code.utils.StreamFile;
+
+import com.hbb.ffmpeg.SoftwareVideoDeCode;
+import com.hbb.ffmpeg.opengl.AbleGLSurfaceView;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Consumer;
@@ -40,6 +37,27 @@ public class MainActivity extends AppCompatActivity {
      *  2.1、不为空 -> DexClassLoader初始化时会加载系统SO和当前程序SO到集合中 -> 对so名进行拼接 -> 遍历集合去做对比。
      *  2.1、为空 -> 拼接路径（ "绝对路径" + fileName + ".so"） -> 去系统SO目录寻找，找到就就加载，找不到就报错
      * 3、找到之后调用nativeLoad加载so，扫描函数，生成函数表 ，key是函数名，value是指令地址。
+     *
+     *
+     * 一、art、devlik 虚拟机堆区分配
+     *  1、imageSpace : 存放编译好的ota机器码以及系统配置内容
+     *  2、zygoteSpace: 存放zygote产生的对象
+     *  3、applicationSpace：存放普通应用产生java和native对象，内部包含了新生代老年代
+     *  4、largeSpace: 存放大于 3 * pagesize = 12k的对象，还有数组对象
+     *
+     * 二、artGC流程，尽可能避免GC
+     *  1、轻量回收：回收上一次GC到本次GC之间发生变化的对象
+     *  2、局部回收：回收large和application 区域对象
+     *  3、全局回收：整个堆区进行回收，除imageSpace区域
+     *  4、进行扩充：尝试对整个堆区进行扩容，但是有上线
+     *  5、回收软引用：回收软引用对象
+     *  6、如果空间还是不够就触发OOM
+     *
+     * 三、内存分析工具
+     * 1、ADB：宏观分析内存情况
+     * 2、MemoryProfiler ：以图表的形式展示内存情况，以及回收相关
+     * 3、leakCanary: 傻瓜式统计Activity和Fragment 对象
+     * 4、MAT：比较全面分析内存泄漏内存溢出情况，页面比较复杂
      */
 
     String path = Environment.getExternalStorageDirectory().getPath() + "/1026jing.h264";

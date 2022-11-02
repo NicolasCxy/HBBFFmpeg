@@ -1,10 +1,11 @@
-package com.hbb.ffmepg.code;
+package com.hbb.ffmpeg;
 
 import android.util.Log;
 
-import com.hbb.ffmepg.code.opengl.AbleGLSurfaceView;
-import com.hbb.ffmepg.code.utils.ImageUtil;
-import com.hbb.ffmepg.code.utils.StreamFile;
+import com.hbb.ffmpeg.annotation.NativeCallBack;
+import com.hbb.ffmpeg.opengl.AbleGLSurfaceView;
+import com.hbb.ffmpeg.utils.ImageUtil;
+import com.hbb.ffmpeg.utils.StreamFile;
 
 public class SoftwareVideoDeCode {
     private static final String TAG = "SoftwareVideoDeCode";
@@ -29,6 +30,7 @@ public class SoftwareVideoDeCode {
      * @param length
      */
     public void deCodeVideo(byte[] data, int length) {
+        Log.i(TAG, "deCodeVideo: " + data.length);
         nativeDecodeVideo(data, length);
     }
 
@@ -40,7 +42,6 @@ public class SoftwareVideoDeCode {
     public void setAbleGlSurface(AbleGLSurfaceView ableGlView) {
         this.mAbleGlView = ableGlView;
     }
-
 
 
     @NativeCallBack

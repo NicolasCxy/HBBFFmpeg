@@ -1,9 +1,10 @@
-package com.hbb.ffmepg.code.opengl;
+package com.hbb.ffmpeg.opengl;
 
 import android.content.Context;
 import android.opengl.GLES20;
 
-import com.hbb.ffmepg.code.R;
+
+import com.hbb.ffmpeg.R;
 
 import java.nio.ByteBuffer;
 
@@ -54,6 +55,7 @@ public class DeCodeVideoFilter extends AbstractFilter{
             GLES20.glEnableVertexAttribArray(afPosition);
             GLES20.glVertexAttribPointer(afPosition, 2, GLES20.GL_FLOAT, false, 8, textureBuffer);
 
+            //设置纹理，并赋值
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId_yuv[0]);
             GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_LUMINANCE, mWidth, mHeight, 0, GLES20.GL_LUMINANCE, GLES20.GL_UNSIGNED_BYTE, y);

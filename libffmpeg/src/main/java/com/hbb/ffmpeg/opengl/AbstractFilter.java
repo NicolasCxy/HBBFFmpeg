@@ -1,9 +1,10 @@
-package com.hbb.ffmepg.code.opengl;
+package com.hbb.ffmpeg.opengl;
 
 import android.content.Context;
 import android.opengl.GLES20;
 
-import com.hbb.ffmepg.code.utils.OpenGLUtils;
+
+import com.hbb.ffmpeg.utils.OpenGLUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
