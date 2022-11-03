@@ -34,25 +34,25 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 1、System.loadLibrary 加载
      * 2、判断ClassLoader是否为空
-     *  2.1、不为空 -> DexClassLoader初始化时会加载系统SO和当前程序SO到集合中 -> 对so名进行拼接 -> 遍历集合去做对比。
-     *  2.1、为空 -> 拼接路径（ "绝对路径" + fileName + ".so"） -> 去系统SO目录寻找，找到就就加载，找不到就报错
+     * 2.1、不为空 -> DexClassLoader初始化时会加载系统SO和当前程序SO到集合中 -> 对so名进行拼接 -> 遍历集合去做对比。
+     * 2.1、为空 -> 拼接路径（ "绝对路径" + fileName + ".so"） -> 去系统SO目录寻找，找到就就加载，找不到就报错
      * 3、找到之后调用nativeLoad加载so，扫描函数，生成函数表 ，key是函数名，value是指令地址。
-     *
-     *
+     * <p>
+     * <p>
      * 一、art、devlik 虚拟机堆区分配
-     *  1、imageSpace : 存放编译好的ota机器码以及系统配置内容
-     *  2、zygoteSpace: 存放zygote产生的对象
-     *  3、applicationSpace：存放普通应用产生java和native对象，内部包含了新生代老年代
-     *  4、largeSpace: 存放大于 3 * pagesize = 12k的对象，还有数组对象
-     *
+     * 1、imageSpace : 存放编译好的ota机器码以及系统配置内容
+     * 2、zygoteSpace: 存放zygote产生的对象
+     * 3、applicationSpace：存放普通应用产生java和native对象，内部包含了新生代老年代
+     * 4、largeSpace: 存放大于 3 * pagesize = 12k的对象，还有数组对象
+     * <p>
      * 二、artGC流程，尽可能避免GC
-     *  1、轻量回收：回收上一次GC到本次GC之间发生变化的对象
-     *  2、局部回收：回收large和application 区域对象
-     *  3、全局回收：整个堆区进行回收，除imageSpace区域
-     *  4、进行扩充：尝试对整个堆区进行扩容，但是有上线
-     *  5、回收软引用：回收软引用对象
-     *  6、如果空间还是不够就触发OOM
-     *
+     * 1、轻量回收：回收上一次GC到本次GC之间发生变化的对象
+     * 2、局部回收：回收large和application 区域对象
+     * 3、全局回收：整个堆区进行回收，除imageSpace区域
+     * 4、进行扩充：尝试对整个堆区进行扩容，但是有上线
+     * 5、回收软引用：回收软引用对象
+     * 6、如果空间还是不够就触发OOM
+     * <p>
      * 三、内存分析工具
      * 1、ADB：宏观分析内存情况
      * 2、MemoryProfiler ：以图表的形式展示内存情况，以及回收相关
@@ -62,8 +62,9 @@ public class MainActivity extends AppCompatActivity {
 
     String path = Environment.getExternalStorageDirectory().getPath() + "/1026jing.h264";
     byte[] sourceData = null;
-    private SoftwareVideoDeCode videoDeCode;
-    private AbleGLSurfaceView mAbleGlView;
+    private SoftwareVideoDeCode videoDeCode, videoDeCode1;
+    private AbleGLSurfaceView mAbleGlView, mAbleGlView2;
+    private AbleSoftLayout mAbleSoftManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +72,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         checkPermission();
         initView();
+        initData();
     }
 
+
     private void initView() {
-        mAbleGlView = (AbleGLSurfaceView) findViewById(R.id.able_glView);
+            mAbleSoftManager = (AbleSoftLayout) findViewById(R.id.able_soft);
+//        mAbleGlView = (AbleGLSurfaceView) findViewById(R.id.able_glView);
+//        mAbleGlView2 = (AbleGLSurfaceView) findViewById(R.id.able_glView2);
+    }
+
+
+    private void initData() {
+
     }
 
     public boolean checkPermission() {
@@ -92,13 +102,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void initFFmpeg(View view) {
-        if (videoDeCode == null) {
-            videoDeCode = new SoftwareVideoDeCode("testDecode");
-            videoDeCode.setAbleGlSurface(mAbleGlView);
-        }
+    int index = 0;
 
-        Toast.makeText(this, "开始初始化", Toast.LENGTH_SHORT).show();
+    public void initFFmpeg(View view) {
+//        if (videoDeCode == null) {
+//            videoDeCode = new SoftwareVideoDeCode("OneAbleDecode1");
+//            videoDeCode.setAbleGlSurface(mAbleGlView);
+//        }
+//
+//        if (videoDeCode1 == null) {
+//            videoDeCode1 = new SoftwareVideoDeCode("OneAbleDeCode2");
+//            videoDeCode1.setAbleGlSurface(mAbleGlView2);
+//        }
+
+        mAbleSoftManager.setLayoutPositionByMode(index);
+
+        index++;
+        if (index > 4) {
+            index = 0;
+        }
+        Toast.makeText(this, "开始初始化" + index, Toast.LENGTH_SHORT).show();
     }
 
     int startIndex = 0;
@@ -149,8 +172,14 @@ public class MainActivity extends AppCompatActivity {
 //                        StreamFile.writeBytes(tempData);
 
                         //进行处理
-                        if (videoDeCode != null)
-                            videoDeCode.deCodeVideo(tempData, tempData.length);
+                        if (mAbleSoftManager.getLeftVideoDeCode() != null) {
+                            mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(tempData, tempData.length);
+                        }
+//
+                        if (mAbleSoftManager.getRightVideoDeCode() != null) {
+                            mAbleSoftManager.getRightVideoDeCode().deCodeVideo(tempData, tempData.length);
+                        }
+
                         startIndex = nextFrameStart;
                     }
                 });

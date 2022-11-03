@@ -8,6 +8,9 @@ import com.hbb.ffmpeg.R;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 解码过滤器
+ */
 public class DeCodeVideoFilter extends AbstractFilter{
 
     private int sampler_y,sampler_u,sampler_v;

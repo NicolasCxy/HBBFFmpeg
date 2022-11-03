@@ -4,9 +4,9 @@
 #include "VideoDecoder.h"
 #include "AbleCallJava.h"
 
-VideoDecoder *mVideoDecoder = NULL;
+//VideoDecoder *mVideoDecoder = NULL;
+//AbleCallJava *callJava = NULL;
 _JavaVM *javaVM = NULL;
-AbleCallJava *callJava = NULL;
 
 extern "C" JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -21,26 +21,29 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 
 
 extern "C"
-JNIEXPORT void JNICALL
+JNIEXPORT jlong JNICALL
 Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeInit(JNIEnv *env, jobject thiz) {
-    if (callJava == NULL) {
-        callJava = new AbleCallJava(javaVM, env, thiz);
-    }
+    LOGE("_nativeInit!!!");
 
-    if (mVideoDecoder == NULL) {
-        mVideoDecoder = new VideoDecoder();
-        mVideoDecoder->setAbleCallJava(callJava);
-        mVideoDecoder->DecodeInit();
-    }
+    AbleCallJava *callJava = new AbleCallJava(javaVM, env, thiz);
+
+    VideoDecoder *mVideoDecoder = new VideoDecoder();
+    mVideoDecoder->setAbleCallJava(callJava);
+    mVideoDecoder->DecodeInit();
+
+    return reinterpret_cast<jlong>(mVideoDecoder);
 }
+
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeDecodeVideo(JNIEnv *env, jobject thiz,
-                                                          jbyteArray data_, jint length) {
+                                                          jlong de_code_client, jbyteArray data_,
+                                                          jint length) {
+    //通过指针转换一把
+    VideoDecoder *mVideoDecoder  = reinterpret_cast<VideoDecoder *>(de_code_client);
 
     jbyte *data = env->GetByteArrayElements(data_, NULL);
-
     if (mVideoDecoder != NULL) {
         mVideoDecoder->H264Decode(reinterpret_cast<uint8_t *>(data), length);
     }

@@ -1,5 +1,7 @@
 package com.hbb.ffmpeg;
 
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 
 import com.hbb.ffmpeg.annotation.NativeCallBack;
@@ -18,9 +20,20 @@ public class SoftwareVideoDeCode {
     private AbleGLSurfaceView mAbleGlView;
     private int testCount = 0;
 
+    //native client指针
+    private long mDeCodeClient;
+    private Handler mDecodeHandler;
+
     public SoftwareVideoDeCode(String mStreamPath) {
         this.mStreamPath = mStreamPath;
-        nativeInit();
+        init();
+    }
+
+    private void init() {
+        mDeCodeClient = nativeInit();
+        HandlerThread mDecodeThread = new HandlerThread("SoftwareVideoDeCode - " + mStreamPath);
+        mDecodeThread.start();
+        mDecodeHandler = new Handler(mDecodeThread.getLooper());
     }
 
     /**
@@ -30,8 +43,9 @@ public class SoftwareVideoDeCode {
      * @param length
      */
     public void deCodeVideo(byte[] data, int length) {
-        Log.i(TAG, "deCodeVideo: " + data.length);
-        nativeDecodeVideo(data, length);
+        Log.i(TAG, "deCodeVideo: " + data.length + ",path@:" + mStreamPath);
+        mDecodeHandler.post(() -> nativeDecodeVideo(mDeCodeClient, data, length));
+//        nativeDecodeVideo(mDeCodeClient, data, length);
     }
 
     /**
@@ -46,28 +60,27 @@ public class SoftwareVideoDeCode {
 
     @NativeCallBack
     public void onCallRenderYUV(int width, int height, byte[] y, byte[] u, byte[] v) {
-        Log.i(TAG, "onCallRenderYUV: " + width + ",height :" + height + ",ySize:" + y.length + ",u:" + u.length + ",count : " + testCount);
+        Log.i(TAG, "onCallRenderYUV: " + width + ",height :" + height + ",ySize:" + y.length
+                + ",u:" + u.length + ",count : " + testCount + ",mStreamPath:" + mStreamPath + ",threadName:" + Thread.currentThread().getName());
+        //反馈到上层
         if (this.mAbleGlView != null) {
             this.mAbleGlView.setYUVData(width, height, y, u, v);
         }
 
-
+        //测试模块
         if (testCount == 50) {
             byte[] nv12 = new byte[width * height * 3 / 2];
             ImageUtil.yuvToNv21(y, u, v, nv12, width, height);
             StreamFile.writeBytesYUV(nv12);
 
         }
-
         testCount++;
-
-
     }
 
 
-    private native void nativeInit();
+    private native long nativeInit();
 
-    private native void nativeDecodeVideo(byte[] data, int length);
+    private native void nativeDecodeVideo(long deCodeClient, byte[] data, int length);
 
 
 }

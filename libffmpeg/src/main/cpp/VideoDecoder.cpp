@@ -7,7 +7,6 @@
 VideoDecoder::VideoDecoder() {
     sleepDelta = 1000000 / 30;
     pthread_mutex_init(&codecMutex, NULL);
-
 }
 
 VideoDecoder::~VideoDecoder() {
