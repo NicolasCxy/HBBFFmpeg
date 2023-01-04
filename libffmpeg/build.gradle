@@ -2,6 +2,8 @@ plugins {
     id 'com.android.library'
 }
 
+def AAR_SDK_HBB_SOFT_NAME = "1.0.3"
+
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
@@ -44,6 +46,18 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    android.libraryVariants.all {
+        variant ->
+            variant.outputs.all {
+                def fileName = outputFileName
+                if(outputFileName.toString().concat(".aar")){
+                    fileName = outputFileName.toString().replaceAll(".aar", "."+AAR_SDK_HBB_SOFT_NAME + ".aar")
+                }
+                outputFileName = fileName
+            }
+    }
+
+
     sourceSets {
         main {
             jniLibs.srcDirs = ['src/main/cpp/libs']
@@ -53,7 +67,7 @@ android {
 
 task makeJar(type: Copy) {
     //删除存在的
-    delete 'build/libs/ablewebrtc3.9.60.jar'
+    delete 'build/libs/hbbFFmepg1.0.0.jar'
     //设置拷贝的文件
     from('build/intermediates/aar_main_jar/release/')
     //打进jar包后的文件目录
@@ -63,7 +77,7 @@ task makeJar(type: Copy) {
     //（我们只关心classes.jar这个文件）
     include('classes.jar')
     //重命名
-    rename('classes.jar', 'ablewebrtc3.9.60.jar')
+    rename('classes.jar', 'hbbFFmepg1.0.0.jar')
     makeJar.dependsOn(build)
 }
 

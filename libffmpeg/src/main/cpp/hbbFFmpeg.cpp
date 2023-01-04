@@ -3,10 +3,12 @@
 #include "AndroidLog.h"
 #include "VideoDecoder.h"
 #include "AbleCallJava.h"
+#include "HbbGlobalStatus.h"
 
 //VideoDecoder *mVideoDecoder = NULL;
 //AbleCallJava *callJava = NULL;
 _JavaVM *javaVM = NULL;
+HbbGlobalStatus *mGlobalStatus = NULL;
 
 extern "C" JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
@@ -26,11 +28,11 @@ Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeInit(JNIEnv *env, jobject thiz) {
     LOGE("_nativeInit!!!");
 
     AbleCallJava *callJava = new AbleCallJava(javaVM, env, thiz);
-
-    VideoDecoder *mVideoDecoder = new VideoDecoder();
+    mGlobalStatus = new HbbGlobalStatus();
+    VideoDecoder *mVideoDecoder = new VideoDecoder(mGlobalStatus);
     mVideoDecoder->setAbleCallJava(callJava);
     mVideoDecoder->DecodeInit();
-
+    mVideoDecoder->DecodeStart();
     return reinterpret_cast<jlong>(mVideoDecoder);
 }
 
@@ -45,7 +47,11 @@ Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeDecodeVideo(JNIEnv *env, jobject t
 
     jbyte *data = env->GetByteArrayElements(data_, NULL);
     if (mVideoDecoder != NULL) {
-        mVideoDecoder->H264Decode(reinterpret_cast<uint8_t *>(data), length);
+//        mVideoDecoder->H264Decode(reinterpret_cast<uint8_t *>(data), length);
+//        LOGD("开始数据！！");
+        mVideoDecoder->onFrameData(reinterpret_cast<uint8_t *>(data), length);
+
+//        mVideoDecoder->onFrameData(reinterpret_cast<uint8_t *>(data), length);
     }
     env->ReleaseByteArrayElements(data_, data, 0);
 }

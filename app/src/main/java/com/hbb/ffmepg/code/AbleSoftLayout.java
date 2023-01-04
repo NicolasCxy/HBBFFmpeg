@@ -8,7 +8,7 @@ import com.hbb.ffmpeg.SoftwareVideoDeCode;
 import com.hbb.ffmpeg.opengl.AbleGLSurfaceView;
 
 /**
- * 软件编码layout
+ * 软件解码layout
  */
 public class AbleSoftLayout extends RelativeLayout {
 
@@ -93,6 +93,9 @@ public class AbleSoftLayout extends RelativeLayout {
     public SoftwareVideoDeCode getRightVideoDeCode() {
         return rightVideoDeCode;
     }
+
+
+
 
 
 }

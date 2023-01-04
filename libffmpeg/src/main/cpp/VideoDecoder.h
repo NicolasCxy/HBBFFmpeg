@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string>
+#include "HbbQueue.h"
+#include "HbbGlobalStatus.h"
 
 extern "C"
 {
@@ -21,12 +23,16 @@ extern "C"
 
 class VideoDecoder {
 public:
-    VideoDecoder();
+    VideoDecoder(HbbGlobalStatus *globalStatus );
     ~VideoDecoder();
     int DecodeInit();
     int DecoderRelease();
+    void DecodeStart();
     void setAbleCallJava(AbleCallJava *callJava);
     void H264Decode(uint8_t *data,int dataLength);
+    void decodeAvPacket(AVPacket *avPacket);
+    void onFrameData(uint8_t *data,int dataLength);
+    void handlerDecodeH264();
     char* getVersion();
 
 private:
@@ -37,6 +43,10 @@ private:
     AbleCallJava *callJava = NULL;
     unsigned sleepDelta;
     pthread_mutex_t codecMutex;
+    pthread_t decodeThread;
+    HbbGlobalStatus *globalStatus;
+    HbbQueue *queue;
+    pthread_cond_t condPacket;  //线程阻塞类
 };
 
 

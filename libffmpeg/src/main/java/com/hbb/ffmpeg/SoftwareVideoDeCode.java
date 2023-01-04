@@ -13,8 +13,10 @@ public class SoftwareVideoDeCode {
     private static final String TAG = "SoftwareVideoDeCode";
 
     static {
-        System.loadLibrary("native-lib");
+        System.loadLibrary("hbbFFmpeg");
     }
+
+
 
     private String mStreamPath = "";
     private AbleGLSurfaceView mAbleGlView;
@@ -30,10 +32,16 @@ public class SoftwareVideoDeCode {
     }
 
     private void init() {
-        mDeCodeClient = nativeInit();
+
         HandlerThread mDecodeThread = new HandlerThread("SoftwareVideoDeCode - " + mStreamPath);
         mDecodeThread.start();
         mDecodeHandler = new Handler(mDecodeThread.getLooper());
+        mDecodeHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mDeCodeClient = nativeInit();
+            }
+        });
     }
 
     /**
@@ -44,8 +52,8 @@ public class SoftwareVideoDeCode {
      */
     public void deCodeVideo(byte[] data, int length) {
         Log.i(TAG, "deCodeVideo: " + data.length + ",path@:" + mStreamPath);
-        mDecodeHandler.post(() -> nativeDecodeVideo(mDeCodeClient, data, length));
-//        nativeDecodeVideo(mDeCodeClient, data, length);
+//        mDecodeHandler.post(() -> nativeDecodeVideo(mDeCodeClient, data, length));
+        nativeDecodeVideo(mDeCodeClient, data, length);
     }
 
     /**
@@ -67,14 +75,6 @@ public class SoftwareVideoDeCode {
             this.mAbleGlView.setYUVData(width, height, y, u, v);
         }
 
-        //测试模块
-        if (testCount == 50) {
-            byte[] nv12 = new byte[width * height * 3 / 2];
-            ImageUtil.yuvToNv21(y, u, v, nv12, width, height);
-            StreamFile.writeBytesYUV(nv12);
-
-        }
-        testCount++;
     }
 
 
@@ -82,5 +82,11 @@ public class SoftwareVideoDeCode {
 
     private native void nativeDecodeVideo(long deCodeClient, byte[] data, int length);
 
+    public String getStreamPath() {
+        return mStreamPath;
+    }
 
+    public void setStreamPath(String mStreamPath) {
+        this.mStreamPath = mStreamPath;
+    }
 }

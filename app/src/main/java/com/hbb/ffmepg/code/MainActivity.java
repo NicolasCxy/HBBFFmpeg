@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -28,7 +29,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
 
     /**
@@ -68,7 +69,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        Log.i(TAG, "MainActivity->onCreate!!");
+        Bundle bundle = new Bundle();
+        bundle.putString("value","测试时测试");
+        super.onCreate(bundle);
         setContentView(R.layout.activity_main);
         checkPermission();
         initView();
@@ -126,9 +130,14 @@ public class MainActivity extends AppCompatActivity {
 
     int startIndex = 0;
     Disposable mDisposable;
+    private int count = 0 ;
 
     public void loadData(View view) {
         Log.i(TAG, "loadData_path " + path);
+        if(null!= mDisposable && !mDisposable.isDisposed()){
+            return;
+        }
+
         sourceData = null;
         try {
             sourceData = getBytes(path);
@@ -154,7 +163,6 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
 
-
                         int nextFrameStart = findByFrame(sourceData, startIndex + 2, totalSize);
 
                         if (nextFrameStart <= 0) {
@@ -167,10 +175,17 @@ public class MainActivity extends AppCompatActivity {
 
                         System.arraycopy(sourceData, startIndex, tempData, 0, tempData.length);
 
-                        Log.i(TAG, "读取到数据:" + tempData.length + ",data[4]:" + (tempData[4] & 0x1f) + ",neextFrameIndex:" + nextFrameStart);
+                        Log.i(TAG, "读取到数据:" + tempData.length + ",data[4]:" + (tempData[4] & 0x1f) + ",neextFrameIndex:" + nextFrameStart + ",count :" + count);
 
 //                        StreamFile.writeBytes(tempData);
-
+//
+//                        if(count > 4){
+//                            return;
+//                        }
+//
+//                        Log.w(TAG, "读取到数据@@:" + tempData.length + ",data[4]:" + (tempData[4] & 0x1f) + ",neextFrameIndex:" + nextFrameStart + ",count :" + count);
+//
+//                        count++;
                         //进行处理
                         if (mAbleSoftManager.getLeftVideoDeCode() != null) {
                             mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(tempData, tempData.length);
@@ -183,7 +198,6 @@ public class MainActivity extends AppCompatActivity {
                         startIndex = nextFrameStart;
                     }
                 });
-
     }
 
     private int findByFrame(byte[] sourceData, int index, int totalSize) {
