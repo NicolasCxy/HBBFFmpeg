@@ -35,6 +35,7 @@ public class AbleSoftLayout extends RelativeLayout {
         this.mContext = context;
 
         initBaseLayout();
+        setLayoutPositionByMode(SINGLE_MODLE);
     }
 
     /**

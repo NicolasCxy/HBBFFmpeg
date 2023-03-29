@@ -25,9 +25,7 @@ int HbbQueue::putAvPacket(AVPacket *packet) {
 }
 
 int HbbQueue::getAvPacket(AVPacket *packet) {
-    int result = -1;
     pthread_mutex_lock(&mutexPacket);
-
     while (globalStatus != NULL && !globalStatus->exit) {
         if (queuePacket.size() > 0) {
             AVPacket *avPacket = queuePacket.front();
@@ -37,15 +35,13 @@ int HbbQueue::getAvPacket(AVPacket *packet) {
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;
-            result = 0;
             break;
         } else {
             pthread_cond_wait(&condPacket, &mutexPacket);
         }
     }
     pthread_mutex_unlock(&mutexPacket);
-
-    return result;
+    return 0;
 }
 
 

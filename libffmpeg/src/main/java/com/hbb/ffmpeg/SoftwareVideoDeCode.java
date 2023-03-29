@@ -51,9 +51,9 @@ public class SoftwareVideoDeCode {
      * @param length
      */
     public void deCodeVideo(byte[] data, int length) {
-        Log.i(TAG, "deCodeVideo: " + data.length + ",path@:" + mStreamPath);
-//        mDecodeHandler.post(() -> nativeDecodeVideo(mDeCodeClient, data, length));
-        nativeDecodeVideo(mDeCodeClient, data, length);
+//        Log.i(TAG, "deCodeVideo: " + data.length + ",path:" + mStreamPath);
+        mDecodeHandler.post(() -> nativeDecodeVideo(mDeCodeClient, data, length));
+//        nativeDecodeVideo(mDeCodeClient, data, length);
     }
 
     /**

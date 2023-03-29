@@ -1,27 +1,22 @@
 package com.hbb.ffmepg.code;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.hbb.ffmepg.code.record.LocalFileVideoRecord;
+import com.hbb.ffmepg.code.record.RemoteRtspVideoRecord;
+import com.hbb.ffmepg.code.record.VideoRecordCallBack;
+import com.hbb.ffmpeg.utils.StreamFile;
 
-import com.hbb.ffmpeg.SoftwareVideoDeCode;
-import com.hbb.ffmpeg.opengl.AbleGLSurfaceView;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -29,7 +24,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
-public class MainActivity extends BaseActivity {
+public class MainActivity extends BaseActivity implements VideoRecordCallBack {
     private static final String TAG = "MainActivity";
 
     /**
@@ -50,7 +45,7 @@ public class MainActivity extends BaseActivity {
      * 1、轻量回收：回收上一次GC到本次GC之间发生变化的对象
      * 2、局部回收：回收large和application 区域对象
      * 3、全局回收：整个堆区进行回收，除imageSpace区域
-     * 4、进行扩充：尝试对整个堆区进行扩容，但是有上线
+     * 4、进行扩充：尝试对整个堆区进行扩容，但是有上限
      * 5、回收软引用：回收软引用对象
      * 6、如果空间还是不够就触发OOM
      * <p>
@@ -61,18 +56,26 @@ public class MainActivity extends BaseActivity {
      * 4、MAT：比较全面分析内存泄漏内存溢出情况，页面比较复杂
      */
 
-    String path = Environment.getExternalStorageDirectory().getPath() + "/1026jing.h264";
-    byte[] sourceData = null;
-    private SoftwareVideoDeCode videoDeCode, videoDeCode1;
-    private AbleGLSurfaceView mAbleGlView, mAbleGlView2;
+//    String localPath = Environment.getExternalStorageDirectory().getPath() + "/1026jing.h264";
+    String localPath = Environment.getExternalStorageDirectory().getPath() + "/x26422_1920_1080.h264";
+//    String localPath = Environment.getExternalStorageDirectory().getPath() + "/1080pNoB.h264";
+//       String localPath = Environment.getExternalStorageDirectory().getPath() + "/0323data.h264";
+    String remotePath = "rtsp://admin:able1234@192.168.50.111/h264/ch1/main/av_stream";
+
+//    String remotePath = "rtsp://192.168.7.150/chn2";
+
+
     private AbleSoftLayout mAbleSoftManager;
+    private Disposable deCodeDisposable;
+    private boolean isRemote = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "MainActivity->onCreate!!");
         Bundle bundle = new Bundle();
-        bundle.putString("value","测试时测试");
+        bundle.putString("value", "测试时测试");
         super.onCreate(bundle);
+        hideStatusBar(this);
         setContentView(R.layout.activity_main);
         checkPermission();
         initView();
@@ -81,7 +84,7 @@ public class MainActivity extends BaseActivity {
 
 
     private void initView() {
-            mAbleSoftManager = (AbleSoftLayout) findViewById(R.id.able_soft);
+        mAbleSoftManager = (AbleSoftLayout) findViewById(R.id.able_soft);
 //        mAbleGlView = (AbleGLSurfaceView) findViewById(R.id.able_glView);
 //        mAbleGlView2 = (AbleGLSurfaceView) findViewById(R.id.able_glView2);
     }
@@ -125,107 +128,90 @@ public class MainActivity extends BaseActivity {
         if (index > 4) {
             index = 0;
         }
-        Toast.makeText(this, "开始初始化" + index, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "开始初始化!!@ -> index: " + index, Toast.LENGTH_SHORT).show();
+
+        view.setVisibility(View.GONE);
     }
 
-    int startIndex = 0;
-    Disposable mDisposable;
-    private int count = 0 ;
+    int count = 0;
+    private boolean isStart = false;
+    private boolean isReadIFrame = false;
 
     public void loadData(View view) {
-        Log.i(TAG, "loadData_path " + path);
-        if(null!= mDisposable && !mDisposable.isDisposed()){
-            return;
+        isStart = true;
+        if(!isRemote){
+            LocalFileVideoRecord localFileVideo = new LocalFileVideoRecord();
+            localFileVideo.start(localPath);
+            localFileVideo.setVideoCallBack(this);
+        }else{
+            RemoteRtspVideoRecord remoteRtspVideo = new RemoteRtspVideoRecord();
+            remoteRtspVideo.start(remotePath);
+            remoteRtspVideo.setVideoCallBack(this);
         }
 
-        sourceData = null;
-        try {
-            sourceData = getBytes(path);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        startIndex = 0;
-//总字节数
-        int totalSize = sourceData.length;
-
-        //轮询读取数据
-        mDisposable = Observable.interval(0, 40, TimeUnit.MILLISECONDS)
+        deCodeDisposable = Observable.interval(0, 1, TimeUnit.SECONDS)
                 .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io())
-                .subscribe(new Consumer<Long>() {
+                .observeOn(Schedulers.io()).subscribe(new Consumer<Long>() {
                     @Override
-                    public void accept(Long aLong) throws Throwable {
-
-                        if (totalSize == 0 || startIndex >= totalSize) {
-                            Log.i(TAG, "停止当前寻轮1");
-                            mDisposable.dispose();
-                            return;
-                        }
-
-                        int nextFrameStart = findByFrame(sourceData, startIndex + 2, totalSize);
-
-                        if (nextFrameStart <= 0) {
-                            Log.d(TAG, "停止当前寻轮2");
-                            mDisposable.dispose();
-                            return;
-                        }
-
-                        byte[] tempData = new byte[nextFrameStart - startIndex];
-
-                        System.arraycopy(sourceData, startIndex, tempData, 0, tempData.length);
-
-                        Log.i(TAG, "读取到数据:" + tempData.length + ",data[4]:" + (tempData[4] & 0x1f) + ",neextFrameIndex:" + nextFrameStart + ",count :" + count);
-
-//                        StreamFile.writeBytes(tempData);
-//
-//                        if(count > 4){
-//                            return;
-//                        }
-//
-//                        Log.w(TAG, "读取到数据@@:" + tempData.length + ",data[4]:" + (tempData[4] & 0x1f) + ",neextFrameIndex:" + nextFrameStart + ",count :" + count);
-//
-//                        count++;
-                        //进行处理
-                        if (mAbleSoftManager.getLeftVideoDeCode() != null) {
-                            mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(tempData, tempData.length);
-                        }
-//
-                        if (mAbleSoftManager.getRightVideoDeCode() != null) {
-                            mAbleSoftManager.getRightVideoDeCode().deCodeVideo(tempData, tempData.length);
-                        }
-
-                        startIndex = nextFrameStart;
+                    public void accept(Long aLong) {
+                        Log.i(TAG, "getRstpStreamCount: " + count);
+                        count = 0;
                     }
                 });
+
+        view.setVisibility(View.GONE);
+
     }
 
-    private int findByFrame(byte[] sourceData, int index, int totalSize) {
-        for (int i = index; i < totalSize - 4; i++) {
-            if (sourceData[i] == 0x00
-                    && sourceData[i + 1] == 0x00
-                    && sourceData[i + 2] == 0x00
-                    && sourceData[i + 3] == 0x01) {
 
-                return i;
+    @Override
+    public void videoData(byte[] data, int length, int videoMode) {
+        count++;
+
+//        StreamFile.writeBytes(data);
+
+        if (isStart) {
+            int flg = data[4] & 0x1f;
+            Log.i(TAG, "videoDataOffset: " + flg + "\tdataLength: " + data.length);
+
+            if (!isReadIFrame) {
+                if (flg == 7) {
+                    isReadIFrame = true;
+                    if (mAbleSoftManager.getLeftVideoDeCode() != null) {
+                        mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
+                    }
+                } else {
+                    Log.e(TAG, "videoData -> 丢帧！！");
+                }
+            } else {
+                if (mAbleSoftManager.getLeftVideoDeCode() != null) {
+                    mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
+                }
             }
         }
-        return -1;
+
+
+//
+//        if (mAbleSoftManager.getRightVideoDeCode() != null) {
+//            mAbleSoftManager.getRightVideoDeCode().deCodeVideo(data, length);
+//        }
+
     }
 
-    public byte[] getBytes(String path) throws IOException {
-        File file = new File(path);
-        InputStream is = new DataInputStream(new FileInputStream(file));
-        Log.i(TAG, "getBytes - > path: " + file.getPath());
-        int len;
-        int size = 1024;
-        byte[] buf;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        buf = new byte[size];
-        while ((len = is.read(buf, 0, size)) != -1)
-            bos.write(buf, 0, len);
-        buf = bos.toByteArray();
-        return buf;
-    }
 
+    public static void hideStatusBar(Activity activity) {
+        if (activity == null) return;
+        Window window = activity.getWindow();
+        if (window == null) return;
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        window.getDecorView()
+                .setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        WindowManager.LayoutParams lp = window.getAttributes();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+        window.setAttributes(lp);
+    }
 }

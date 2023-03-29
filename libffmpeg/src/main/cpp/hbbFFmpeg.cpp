@@ -48,7 +48,7 @@ Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeDecodeVideo(JNIEnv *env, jobject t
     jbyte *data = env->GetByteArrayElements(data_, NULL);
     if (mVideoDecoder != NULL) {
 //        mVideoDecoder->H264Decode(reinterpret_cast<uint8_t *>(data), length);
-//        LOGD("开始数据！！");
+
         mVideoDecoder->onFrameData(reinterpret_cast<uint8_t *>(data), length);
 
 //        mVideoDecoder->onFrameData(reinterpret_cast<uint8_t *>(data), length);

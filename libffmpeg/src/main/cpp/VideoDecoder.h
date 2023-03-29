@@ -8,10 +8,12 @@
 #include "AndroidLog.h"
 #include "AbleCallJava.h"
 #include <unistd.h>
-#include <pthread.h>
-#include <string>
 #include "HbbQueue.h"
 #include "HbbGlobalStatus.h"
+
+#include <iostream>
+#include <chrono>
+#include <unistd.h>
 
 extern "C"
 {
@@ -41,12 +43,14 @@ private:
     AVPacket *avPacket = NULL;
     AVFrame *avFrame = NULL;
     AbleCallJava *callJava = NULL;
-    unsigned sleepDelta;
+    unsigned sleepDelta;        //解码延迟时长
     pthread_mutex_t codecMutex;
     pthread_t decodeThread;
     HbbGlobalStatus *globalStatus;
     HbbQueue *queue;
     pthread_cond_t condPacket;  //线程阻塞类
+
+
 };
 
 
