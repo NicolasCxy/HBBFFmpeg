@@ -10,10 +10,12 @@
 #include <unistd.h>
 #include "HbbQueue.h"
 #include "HbbGlobalStatus.h"
+#include "libyuv/YuvHandler.h"
 
 #include <iostream>
 #include <chrono>
 #include <unistd.h>
+
 
 extern "C"
 {
@@ -49,6 +51,8 @@ private:
     HbbGlobalStatus *globalStatus;
     HbbQueue *queue;
     pthread_cond_t condPacket;  //线程阻塞类
+
+    YuvHandler *mYuvHandler = NULL;
 
 
 };

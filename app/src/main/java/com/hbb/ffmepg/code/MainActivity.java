@@ -8,14 +8,16 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.hbb.ffmepg.code.decode.AbleSoftLayout;
 import com.hbb.ffmepg.code.record.LocalFileVideoRecord;
 import com.hbb.ffmepg.code.record.RemoteRtspVideoRecord;
 import com.hbb.ffmepg.code.record.VideoRecordCallBack;
-import com.hbb.ffmpeg.utils.StreamFile;
 
 import java.util.concurrent.TimeUnit;
 
@@ -57,17 +59,18 @@ public class MainActivity extends BaseActivity implements VideoRecordCallBack {
      */
 
 //    String localPath = Environment.getExternalStorageDirectory().getPath() + "/1026jing.h264";
-    String localPath = Environment.getExternalStorageDirectory().getPath() + "/x26422_1920_1080.h264";
-//    String localPath = Environment.getExternalStorageDirectory().getPath() + "/1080pNoB.h264";
-//       String localPath = Environment.getExternalStorageDirectory().getPath() + "/0323data.h264";
+//    String localPath = Environment.getExternalStorageDirectory().getPath() + "/x26422_1920_1080.h264";
+    String localPath = Environment.getExternalStorageDirectory().getPath() + "/1080pNoB.h264";
+    //       String localPath = Environment.getExternalStorageDirectory().getPath() + "/0323data.h264";
     String remotePath = "rtsp://admin:able1234@192.168.50.111/h264/ch1/main/av_stream";
-
+//
 //    String remotePath = "rtsp://192.168.7.150/chn2";
 
 
     private AbleSoftLayout mAbleSoftManager;
     private Disposable deCodeDisposable;
     private boolean isRemote = true;
+    private RelativeLayout rlContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +88,7 @@ public class MainActivity extends BaseActivity implements VideoRecordCallBack {
 
     private void initView() {
         mAbleSoftManager = (AbleSoftLayout) findViewById(R.id.able_soft);
+        rlContainer = (RelativeLayout) findViewById(R.id.rl_container);
 //        mAbleGlView = (AbleGLSurfaceView) findViewById(R.id.able_glView);
 //        mAbleGlView2 = (AbleGLSurfaceView) findViewById(R.id.able_glView2);
     }
@@ -122,15 +126,29 @@ public class MainActivity extends BaseActivity implements VideoRecordCallBack {
 //            videoDeCode1.setAbleGlSurface(mAbleGlView2);
 //        }
 
-        mAbleSoftManager.setLayoutPositionByMode(index);
+//        mAbleSoftManager.setLayoutPositionByMode(index);
+//
+//        index++;
+//        if (index > 4) {
+//            index = 0;
+//        }
+//        Toast.makeText(this, "开始初始化!!@ -> index: " + index, Toast.LENGTH_SHORT).show();
 
-        index++;
-        if (index > 4) {
-            index = 0;
-        }
-        Toast.makeText(this, "开始初始化!!@ -> index: " + index, Toast.LENGTH_SHORT).show();
 
-        view.setVisibility(View.GONE);
+        RelativeLayout view1 = new RelativeLayout(this);
+        view1.setBackgroundColor( getResources().getColor(R.color.purple_700));
+
+
+        view1.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        rlContainer.addView(view1);
+
+
+
+        Toast.makeText(this, "添加完毕！ " + index, Toast.LENGTH_SHORT).show();
+
+
+//        view.setVisibility(View.GONE);
     }
 
     int count = 0;
@@ -139,11 +157,11 @@ public class MainActivity extends BaseActivity implements VideoRecordCallBack {
 
     public void loadData(View view) {
         isStart = true;
-        if(!isRemote){
+        if (!isRemote) {
             LocalFileVideoRecord localFileVideo = new LocalFileVideoRecord();
             localFileVideo.start(localPath);
             localFileVideo.setVideoCallBack(this);
-        }else{
+        } else {
             RemoteRtspVideoRecord remoteRtspVideo = new RemoteRtspVideoRecord();
             remoteRtspVideo.start(remotePath);
             remoteRtspVideo.setVideoCallBack(this);
@@ -173,21 +191,32 @@ public class MainActivity extends BaseActivity implements VideoRecordCallBack {
 
         if (isStart) {
             int flg = data[4] & 0x1f;
-            Log.i(TAG, "videoDataOffset: " + flg + "\tdataLength: " + data.length);
 
-            if (!isReadIFrame) {
-                if (flg == 7) {
-                    isReadIFrame = true;
-                    if (mAbleSoftManager.getLeftVideoDeCode() != null) {
-                        mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
-                    }
-                } else {
-                    Log.e(TAG, "videoData -> 丢帧！！");
-                }
-            } else {
-                if (mAbleSoftManager.getLeftVideoDeCode() != null) {
-                    mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
-                }
+//            if (!isReadIFrame) {
+//                if (flg == 7) {
+//                    isReadIFrame = true;
+//                    if (mAbleSoftManager.getLeftVideoDeCode() != null) {
+//                        Log.w(TAG, "videoDataOffset: " + flg + "\tdataLength: " + data.length);
+//                        mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
+//                    }
+//                } else {
+//                    Log.e(TAG, "videoData -> 丢帧！！");
+//                }
+//            } else {
+//                if (mAbleSoftManager.getLeftVideoDeCode() != null) {
+//                    Log.i(TAG, "videoDataOffset: " + flg + "\tdataLength: " + data.length);
+//                    mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
+//                }
+//            }
+
+
+            if (mAbleSoftManager.getLeftVideoDeCode() != null) {
+                mAbleSoftManager.getLeftVideoDeCode().deCodeVideo(data, length);
+            }
+
+
+            if (mAbleSoftManager.getRightVideoDeCode() != null) {
+                mAbleSoftManager.getRightVideoDeCode().deCodeVideo(data, length);
             }
         }
 

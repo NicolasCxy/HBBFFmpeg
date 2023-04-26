@@ -7,10 +7,21 @@
     tools:context=".MainActivity">
 
 
-    <com.hbb.ffmepg.code.AbleSoftLayout
+    <com.hbb.ffmepg.code.decode.AbleSoftLayout
         android:id="@+id/able_soft"
+
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
+
+
+    <RelativeLayout
+        android:id="@+id/rl_container"
+        android:layout_width="match_parent"
+        android:gravity="center"
+        android:layout_height="200dp">
+
+
+    </RelativeLayout>
 
     
     <Button

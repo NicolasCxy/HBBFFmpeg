@@ -25,7 +25,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_hbb_ffmpeg_SoftwareVideoDeCode_nativeInit(JNIEnv *env, jobject thiz) {
-    LOGE("_nativeInit!!!");
+    LOGE("_nativeModeInit");
 
     AbleCallJava *callJava = new AbleCallJava(javaVM, env, thiz);
     mGlobalStatus = new HbbGlobalStatus();

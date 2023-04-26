@@ -62,7 +62,7 @@ public class LocalFileVideoRecord extends BaseVideoRecord {
         int totalSize = sourceData.length;
 
         //轮询读取数据
-        mDisposable = Observable.interval(0, 66, TimeUnit.MILLISECONDS)
+        mDisposable = Observable.interval(0, 40, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(Schedulers.io())
                 .subscribe(new Consumer<Long>() {

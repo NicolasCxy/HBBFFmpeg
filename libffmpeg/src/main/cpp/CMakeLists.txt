@@ -1,9 +1,16 @@
 cmake_minimum_required(VERSION 3.10.2)
 project("code")
 
+#FFMPEG
+include_directories(.)
 include_directories(include)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}")
 #aux_source_directory(. SOURCE)
+
+#LIBYUV
+add_subdirectory(libyuv)
+include_directories(libyuv/include)
+
 
 file(GLOB cpp_source *.cpp)
 
@@ -26,5 +33,6 @@ target_link_libraries(
         avutil
         swresample
         swscale
+        hbblibyuv
         log
         android)

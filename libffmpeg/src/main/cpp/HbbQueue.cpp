@@ -29,9 +29,19 @@ int HbbQueue::getAvPacket(AVPacket *packet) {
     while (globalStatus != NULL && !globalStatus->exit) {
         if (queuePacket.size() > 0) {
             AVPacket *avPacket = queuePacket.front();
-            if (av_packet_ref(packet, avPacket) == 0) {
-                queuePacket.pop();
+            try {
+                if (av_packet_ref(packet, avPacket) == 0) {
+                    queuePacket.pop();
+                }
+            } catch (...) {
+                LOGE("取出队列异常继续执行! ");
+                av_packet_unref(packet);
+                av_packet_free(&packet);
+                av_free(packet);
+                avPacket = NULL;
             }
+
+            av_packet_unref(avPacket);
             av_packet_free(&avPacket);
             av_free(avPacket);
             avPacket = NULL;

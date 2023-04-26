@@ -11,6 +11,7 @@ VideoDecoder::VideoDecoder(HbbGlobalStatus *globalStatus) {
     sleepDelta = 1000;
     this->globalStatus = globalStatus;
     this->queue = new HbbQueue(globalStatus);
+    this->mYuvHandler = new YuvHandler();
     pthread_mutex_init(&codecMutex, NULL);
 //    pthread_cond_init(&condPacket,NULL);
 }
@@ -139,15 +140,22 @@ void VideoDecoder::handlerDecodeH264() {
             avPacket = NULL;
             continue;
         }
-        LOGD("获取到数据,数据大小：%d", avPacket->size);
+        if (LOG_DEBUG)
+            LOGD("获取到数据,数据大小@：%d,flag: %d: ", avPacket->size, (avPacket->data[4] & 0x1f));
+
         auto start = chrono::steady_clock::now();
         //开始解码
         decodeAvPacket(avPacket);
         auto end = chrono::steady_clock::now();
         long value = chrono::duration_cast<chrono::milliseconds>(end - start).count();
 
-        LOGD("Elapsed time in millisecondsEncode！: %ld ", value);
+//        if (LOG_DEBUG)
+        LOGD("Elapsed time in millisecondsEncode: %ld ", value);
     }
+    end:
+    av_packet_free(&avPacket);
+    av_free(avPacket);
+    avPacket = NULL;
 }
 
 void VideoDecoder::decodeAvPacket(AVPacket *avPacket) {
@@ -155,6 +163,7 @@ void VideoDecoder::decodeAvPacket(AVPacket *avPacket) {
     pthread_mutex_lock(&codecMutex);
     if (avcodec_send_packet(pAVCodecCtx_decoder, avPacket) != 0) {
         LOGE("avcodec_send_packet Error!");
+        av_packet_unref(avPacket);
         av_packet_free(&avPacket);
         av_free(avPacket);
         avPacket = NULL;
@@ -165,94 +174,126 @@ void VideoDecoder::decodeAvPacket(AVPacket *avPacket) {
     int ret = 0;
     while (ret >= 0) {
         ret = avcodec_receive_frame(pAVCodecCtx_decoder, avFrame);
-        LOGE("avcodec_receive_frame@: %d", ret);
+        if (LOG_DEBUG)
+            LOGE("avcodec_receive_frame@: %d", ret);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            LOGE("%s Error AVERROR=%d", __FUNCTION__, ret);
+            if (LOG_DEBUG)
+                LOGE("%s Error AVERROR=%d", __FUNCTION__, ret);
             av_frame_unref(avFrame);
             usleep(sleepDelta);
             continue;
         } else if (ret < 0) {
+
             LOGE("%s Error receive decoding video frame ret=%d", __FUNCTION__, ret);
             av_frame_unref(avFrame);
             usleep(sleepDelta);
             continue;
         }
 
+        if (LOG_DEBUG)
+            LOGD("解码成功 -> width: %d,height: %d,size:%d,format@: %d，pst: %ld", avFrame->width,
+                 avFrame->height,
+                 avFrame->pkt_size, avFrame->format, avFrame->pts);
 
-        LOGD("解码成功 -> width: %d,height: %d,size:%d,format: %d，pst: %ld", avFrame->width,
-             avFrame->height,
-             avFrame->pkt_size, (avFrame->format == AV_PIX_FMT_YUV420P), avFrame->pts);
-
-
-        //进行颜色类型转换以及大小缩放
-        //创建承载转换后的AVFrame
-        AVFrame *pFrameYUV420P = av_frame_alloc();
-        //获取大小
-        int buffSize = av_image_get_buffer_size(
-                AV_PIX_FMT_YUV420P,
-                pAVCodecCtx_decoder->width,
-                pAVCodecCtx_decoder->height,
-                1);
-
-        //创建数据容器
-        uint8_t *buffer = static_cast<uint8_t *>(av_malloc(buffSize));
-        //AVFrame 和 data[]进行关联
-        av_image_fill_arrays(pFrameYUV420P->data,
-                             pFrameYUV420P->linesize, buffer,
-                             AV_PIX_FMT_YUV420P,
-                             pAVCodecCtx_decoder->width,
-                             pAVCodecCtx_decoder->height, 1);
-
-        //使用libyuv做转换
-
-
-
-
-
-        //创建转换器
-        SwsContext *sws_ctx = sws_getContext(pAVCodecCtx_decoder->width,
-                                             pAVCodecCtx_decoder->height,
-                                             pAVCodecCtx_decoder->pix_fmt,
-                                             pAVCodecCtx_decoder->width,
-                                             pAVCodecCtx_decoder->height, AV_PIX_FMT_YUV420P,
-                                             SWS_FAST_BILINEAR, NULL, NULL, NULL);
-
-        //创建失败
-        if (!sws_ctx) {
-            av_frame_free(&pFrameYUV420P);
-            av_free(pFrameYUV420P);
-            av_free(buffer);
-            av_frame_unref(avFrame);
-            pthread_mutex_unlock(&codecMutex);
-            continue;
-        }
-
-//        //开始转换
-        sws_scale(sws_ctx, avFrame->data, avFrame->linesize, 0, avFrame->height,
-                  pFrameYUV420P->data, pFrameYUV420P->linesize);
-////
-        //反馈到上层渲染
         callJava->onCallRenderYUV(
                 pAVCodecCtx_decoder->width,
                 pAVCodecCtx_decoder->height,
-                pFrameYUV420P->data[0],
-                pFrameYUV420P->data[1],
-                pFrameYUV420P->data[2]);
+                avFrame->data[0],
+                avFrame->data[1],
+                avFrame->data[2]);
 
 
+//        if(avFrame->format == AV_PIX_FMT_YUV420P){      //无需转换，直接回调
+//            callJava->onCallRenderYUV(
+//                    pAVCodecCtx_decoder->width,
+//                    pAVCodecCtx_decoder->height,
+//                    avFrame->data[0],
+//                    avFrame->data[1],
+//                    avFrame->data[2]);
+//
+//        }else{
+//            //进行颜色类型转换以及大小缩放
+//            //创建承载转换后的AVFrame
+//        AVFrame *pFrameYUV420P = av_frame_alloc();
+////        //获取大小
+//        int buffSize = av_image_get_buffer_size(
+//                AV_PIX_FMT_YUV420P,
+//                pAVCodecCtx_decoder->width,
+//                pAVCodecCtx_decoder->height,
+//                1);
+////
+////        //创建数据容器
+//        uint8_t *buffer = static_cast<uint8_t *>(av_malloc(buffSize));
+////        //AVFrame 和 data[]进行关联
+//        av_image_fill_arrays(pFrameYUV420P->data,
+//                             pFrameYUV420P->linesize, buffer,
+//                             AV_PIX_FMT_YUV420P,
+//                             pAVCodecCtx_decoder->width,
+//                             pAVCodecCtx_decoder->height, 1);
+//
+//
+//        //使用libyuv做转换
+//        mYuvHandler->yuv420pScale(avFrame->data[0],
+//                                  avFrame->data[1],
+//                                  avFrame->data[2],
+//                                  pAVCodecCtx_decoder->width,
+//                                  pAVCodecCtx_decoder->height,
+//                                  pFrameYUV420P->data[0],
+//                                  pFrameYUV420P->data[1],
+//                                  pFrameYUV420P->data[2],
+//                                  pAVCodecCtx_decoder->width,
+//                                  pAVCodecCtx_decoder->height);
+//
+//
+////            创建转换器
+//        SwsContext *sws_ctx = sws_getContext(pAVCodecCtx_decoder->width,
+//                                             pAVCodecCtx_decoder->height,
+//                                             pAVCodecCtx_decoder->pix_fmt,
+//                                             pAVCodecCtx_decoder->width,
+//                                             pAVCodecCtx_decoder->height, AV_PIX_FMT_YUV420P,
+//                                             SWS_FAST_BILINEAR, NULL, NULL, NULL);
+//
+//        //创建失败
+//        if (!sws_ctx) {
+//            av_frame_free(&pFrameYUV420P);
+//            av_free(pFrameYUV420P);
+//            av_free(buffer);
+//            av_frame_unref(avFrame);
+//            pthread_mutex_unlock(&codecMutex);
+//            continue;
+//        }
+//
+//        //开始转换
+//        sws_scale(sws_ctx, avFrame->data, avFrame->linesize, 0, avFrame->height,
+//                  pFrameYUV420P->data, pFrameYUV420P->linesize);
+////
+////            反馈到上层渲染
+//        callJava->onCallRenderYUV(
+//                pAVCodecCtx_decoder->width,
+//                pAVCodecCtx_decoder->height,
+//                pFrameYUV420P->data[0],
+//                pFrameYUV420P->data[1],
+//                pFrameYUV420P->data[2]);
+//
+//
+//        av_frame_free(&pFrameYUV420P);
+//        av_free(pFrameYUV420P);
+//        av_free(buffer);
+//        sws_freeContext(sws_ctx);
+//        }
 
-        av_frame_free(&pFrameYUV420P);
-        av_free(pFrameYUV420P);
-        av_free(buffer);
-        sws_freeContext(sws_ctx);
         av_frame_unref(avFrame);
     }
-
 
     av_packet_free(&avPacket);
     av_free(avPacket);
     avPacket = NULL;
     pthread_mutex_unlock(&codecMutex);
+
+
+//    fread();
+    fwrite()
+    pow(SEEK_CUR)
 
 
 }
